@@ -1,4 +1,7 @@
 
+using Microsoft.EntityFrameworkCore;
+using ProjectFlow.Infrastructure.Data;
+
 namespace ProjectFlow.API
 {
     public class Program
@@ -8,6 +11,12 @@ namespace ProjectFlow.API
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddAuthorization();
+            // Add DbContext with SQL Server provider
+            builder.Services.AddDbContext<ProjectFlowDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // Add authorization services
             builder.Services.AddAuthorization();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
