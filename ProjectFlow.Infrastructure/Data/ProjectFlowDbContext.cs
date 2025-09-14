@@ -45,12 +45,16 @@ namespace ProjectFlow.Infrastructure.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(300);
+
                 entity.HasOne(e => e.Project)
-                      .WithMany()
-                      .HasForeignKey(e => e.ProjectId);
+                      .WithMany(p => p.Tasks)
+                      .HasForeignKey(e => e.ProjectId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
                 entity.HasOne(e => e.AssignedTo)
                       .WithMany()
-                      .HasForeignKey(e => e.AssignedToId);
+                      .HasForeignKey(e => e.AssignedToId)
+                      .OnDelete(DeleteBehavior.NoAction);
             });
         }
     }

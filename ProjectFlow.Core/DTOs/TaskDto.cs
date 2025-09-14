@@ -15,10 +15,36 @@ namespace ProjectFlow.Core.DTOs
         public ProjectTaskStatus Status { get; set; }
         public TaskPriority Priority { get; set; }
         public int ProjectId { get; set; }
+        public string ProjectName { get; set; } = string.Empty;
         public int? AssignedToId { get; set; }
         public string? AssignedToName { get; set; }
         public DateTime? DueDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+    }
+    public class CreateTaskDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public TaskPriority Priority { get; set; } = TaskPriority.Medium;
+        public int ProjectId { get; set; }
+        public int? AssignedToId { get; set; }
+        public DateTime? DueDate { get; set; }
+    }
+
+    public class UpdateTaskDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public ProjectTaskStatus Status { get; set; }
+        public TaskPriority Priority { get; set; }
+        public int? AssignedToId { get; set; }
+        public DateTime? DueDate { get; set; }
+    }
+
+    public class TaskWithDetailsDto : TaskDto
+    {
+        public string ProjectDescription { get; set; } = string.Empty;
+        public string ProjectCreatedByName { get; set; } = string.Empty;
     }
 }

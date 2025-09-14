@@ -43,12 +43,44 @@ namespace ProjectFlow.Core.Mappings
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.Tasks, opt => opt.Ignore());
 
-            // Task mappings (basic)
             CreateMap<ProjectTask, TaskDto>()
                 .ForMember(dest => dest.AssignedToName,
                     opt => opt.MapFrom(src => src.AssignedTo != null
                         ? $"{src.AssignedTo.FirstName} {src.AssignedTo.LastName}"
                         : null));
+
+            CreateMap<ProjectTask, TaskDto>()
+                .ForMember(dest => dest.ProjectName, opt => opt.MapFrom(src => src.Project.Name))
+                .ForMember(dest => dest.AssignedToName,
+                    opt => opt.MapFrom(src => src.AssignedTo != null
+                        ? $"{src.AssignedTo.FirstName} {src.AssignedTo.LastName}"
+                        : null));
+
+            CreateMap<ProjectTask, TaskWithDetailsDto>()
+                .ForMember(dest => dest.ProjectName, opt => opt.MapFrom(src => src.Project.Name))
+                .ForMember(dest => dest.ProjectDescription, opt => opt.MapFrom(src => src.Project.Description))
+                .ForMember(dest => dest.ProjectCreatedByName,
+                    opt => opt.MapFrom(src => $"{src.Project.CreatedBy.FirstName} {src.Project.CreatedBy.LastName}"))
+                .ForMember(dest => dest.AssignedToName,
+                    opt => opt.MapFrom(src => src.AssignedTo != null
+                        ? $"{src.AssignedTo.FirstName} {src.AssignedTo.LastName}"
+                        : null));
+
+            CreateMap<CreateTaskDto, ProjectTask>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ProjectTaskStatus.ToDo))
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.Project, opt => opt.Ignore())
+                .ForMember(dest => dest.AssignedTo, opt => opt.Ignore());
+
+            CreateMap<UpdateTaskDto, ProjectTask>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.ProjectId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.Project, opt => opt.Ignore())
+                .ForMember(dest => dest.AssignedTo, opt => opt.Ignore());
         }
     }
 }

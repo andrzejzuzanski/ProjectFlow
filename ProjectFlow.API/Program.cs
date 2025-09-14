@@ -25,6 +25,7 @@ namespace ProjectFlow.API
             //Add repositories
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+            builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 
             //Add FluentValidation
             builder.Services.AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>();
@@ -58,6 +59,7 @@ namespace ProjectFlow.API
             // Map endpoints
             app.MapUserEndpoints();
             app.MapProjectEndpoints();
+            app.MapTaskEndpoints();
 
             app.Run();
         }
