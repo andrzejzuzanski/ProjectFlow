@@ -1,11 +1,12 @@
-﻿using FluentValidation;
+﻿using AutoMapper;
+using FluentValidation;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using ProjectFlow.Core.DTOs;
 using ProjectFlow.Core.Entities;
 using ProjectFlow.Core.Interfaces;
-using ProjectFlow.Infrastructure.Data;
 using ProjectFlow.Core.Validators;
+using ProjectFlow.Infrastructure.Data;
 
 namespace ProjectFlow.API.Endpoints
 {
@@ -20,44 +21,23 @@ namespace ProjectFlow.API.Endpoints
             group.MapPost("/", CreateUser);
         }
 
-        private static async Task<IResult> GetUsers(IUserRepository repository)
+        private static async Task<IResult> GetUsers(IUserRepository repository, IMapper mapper)
         {
             var users = await repository.GetAllActiveUsersAsync();
-
-            var userDtos = users.Select(user => new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt,
-                IsActive = user.IsActive
-            });
-
+            var userDtos = mapper.Map<IEnumerable<UserDto>>(users);
             return Results.Ok(userDtos);
         }
-        private static async Task<IResult> GetUser(int id, IUserRepository repository)
+        private static async Task<IResult> GetUser(int id, IUserRepository repository, IMapper mapper)
         {
             var user = await repository.GetByIdAsync(id);
 
             if (user == null)
                 return Results.NotFound();
 
-            var userDto = new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt,
-                IsActive = user.IsActive
-            };
-
+            var userDto = mapper.Map<UserDto>(user);
             return Results.Ok(userDto);
         }
-        private static async Task<IResult> CreateUser(CreateUserDto createUserDto, IUserRepository repository, IValidator<CreateUserDto> validator)
+        private static async Task<IResult> CreateUser(CreateUserDto createUserDto, IUserRepository repository, IValidator<CreateUserDto> validator, IMapper mapper)
         {
 
             var validationResult = await validator.ValidateAsync(createUserDto);
@@ -73,29 +53,12 @@ namespace ProjectFlow.API.Endpoints
             if (await repository.EmailExistsAsync(createUserDto.Email))
                 return Results.BadRequest("User with this email already exists");
 
-            var user = new User
-            {
-                Email = createUserDto.Email,
-                FirstName = createUserDto.FirstName,
-                LastName = createUserDto.LastName,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password),
-                Role = createUserDto.Role,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            };
+            var user = mapper.Map<User>(createUserDto);
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(createUserDto.Password);
 
             var createdUser = await repository.CreateAsync(user);
 
-            var newUserDto = new UserDto
-            {
-                Id = createdUser.Id,
-                Email = createdUser.Email,
-                FirstName = createdUser.FirstName,
-                LastName = createdUser.LastName,
-                Role = createdUser.Role,
-                CreatedAt = createdUser.CreatedAt,
-                IsActive = createdUser.IsActive
-            };
+            var newUserDto = mapper.Map<UserDto>(createdUser);
 
             return Results.Created($"/api/users/{user.Id}", newUserDto);
         }

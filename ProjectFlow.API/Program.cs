@@ -1,11 +1,14 @@
 
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using ProjectFlow.Infrastructure.Data;
+using Microsoft.Extensions.DependencyInjection;
 using ProjectFlow.API.Endpoints;
 using ProjectFlow.Core.Interfaces;
-using ProjectFlow.Infrastructure.Repositories;
-using FluentValidation;
+using ProjectFlow.Core.Mappings;
 using ProjectFlow.Core.Validators;
+using ProjectFlow.Infrastructure.Data;
+using ProjectFlow.Infrastructure.Repositories;
+
 
 namespace ProjectFlow.API
 {
@@ -24,6 +27,12 @@ namespace ProjectFlow.API
 
             //Add FluentValidation
             builder.Services.AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>();
+
+            // Add AutoMapper
+            builder.Services.AddAutoMapper(cfg =>
+            {
+                cfg.AddProfile<UserMappingProfile>();
+            });
 
             // Add services to the container.
             builder.Services.AddAuthorization();
