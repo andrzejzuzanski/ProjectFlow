@@ -1,7 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using ProjectFlow.API.DTOs;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
+using ProjectFlow.Core.DTOs;
 using ProjectFlow.Core.Entities;
+using ProjectFlow.Core.Interfaces;
 using ProjectFlow.Infrastructure.Data;
+using ProjectFlow.Core.Validators;
 
 namespace ProjectFlow.API.Endpoints
 {
@@ -16,32 +20,29 @@ namespace ProjectFlow.API.Endpoints
             group.MapPost("/", CreateUser);
         }
 
-        private static async Task<IResult> GetUsers(ProjectFlowDbContext context)
+        private static async Task<IResult> GetUsers(IUserRepository repository)
         {
-            var users = await context.Users
-                .Where(u => u.IsActive)
-                .Select(u => new UserDto
-                {
-                    Id = u.Id,
-                    Email = u.Email,
-                    FirstName = u.FirstName,
-                    LastName = u.LastName,
-                    Role = u.Role,
-                    CreatedAt = u.CreatedAt,
-                    IsActive = u.IsActive
-                })
-                .ToListAsync();
+            var users = await repository.GetAllActiveUsersAsync();
 
-            return Results.Ok(users);
-        }
-        private static async Task<IResult> GetUser(int id, ProjectFlowDbContext context)
-        {
-            var user = await context.Users.FindAsync(id);
-
-            if(user == null || !user.IsActive)
+            var userDtos = users.Select(user => new UserDto
             {
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Role = user.Role,
+                CreatedAt = user.CreatedAt,
+                IsActive = user.IsActive
+            });
+
+            return Results.Ok(userDtos);
+        }
+        private static async Task<IResult> GetUser(int id, IUserRepository repository)
+        {
+            var user = await repository.GetByIdAsync(id);
+
+            if (user == null)
                 return Results.NotFound();
-            }
 
             var userDto = new UserDto
             {
@@ -56,8 +57,22 @@ namespace ProjectFlow.API.Endpoints
 
             return Results.Ok(userDto);
         }
-        private static async Task<IResult> CreateUser(CreateUserDto createUserDto, ProjectFlowDbContext context)
+        private static async Task<IResult> CreateUser(CreateUserDto createUserDto, IUserRepository repository, IValidator<CreateUserDto> validator)
         {
+
+            var validationResult = await validator.ValidateAsync(createUserDto);
+            if (!validationResult.IsValid)
+            {
+                return Results.BadRequest(validationResult.Errors.Select(e => new
+                {
+                    Property = e.PropertyName,
+                    Error = e.ErrorMessage
+                }));
+            }
+
+            if (await repository.EmailExistsAsync(createUserDto.Email))
+                return Results.BadRequest("User with this email already exists");
+
             var user = new User
             {
                 Email = createUserDto.Email,
@@ -69,18 +84,17 @@ namespace ProjectFlow.API.Endpoints
                 IsActive = true
             };
 
-            context.Users.Add(user);
-            await context.SaveChangesAsync();
+            var createdUser = await repository.CreateAsync(user);
 
             var newUserDto = new UserDto
             {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt,
-                IsActive = user.IsActive
+                Id = createdUser.Id,
+                Email = createdUser.Email,
+                FirstName = createdUser.FirstName,
+                LastName = createdUser.LastName,
+                Role = createdUser.Role,
+                CreatedAt = createdUser.CreatedAt,
+                IsActive = createdUser.IsActive
             };
 
             return Results.Created($"/api/users/{user.Id}", newUserDto);

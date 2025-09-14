@@ -1,6 +1,6 @@
 ﻿using ProjectFlow.Core.Enums;
 
-namespace ProjectFlow.API.DTOs
+namespace ProjectFlow.Core.DTOs
 {
     public class UserDto
     {

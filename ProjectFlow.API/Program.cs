@@ -2,6 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectFlow.Infrastructure.Data;
 using ProjectFlow.API.Endpoints;
+using ProjectFlow.Core.Interfaces;
+using ProjectFlow.Infrastructure.Repositories;
+using FluentValidation;
+using ProjectFlow.Core.Validators;
 
 namespace ProjectFlow.API
 {
@@ -14,6 +18,12 @@ namespace ProjectFlow.API
             // Add DbContext with SQL Server provider
             builder.Services.AddDbContext<ProjectFlowDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            //Add repositories
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+            //Add FluentValidation
+            builder.Services.AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>();
 
             // Add services to the container.
             builder.Services.AddAuthorization();
