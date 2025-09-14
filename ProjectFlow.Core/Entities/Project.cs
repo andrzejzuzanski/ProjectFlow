@@ -21,5 +21,6 @@ namespace ProjectFlow.Core.Entities
 
         // Navigation properties
         public User CreatedBy { get; set; } = null!;
+        public ICollection<ProjectTask> Tasks { get; set; } = new List<ProjectTask>();
     }
 }
