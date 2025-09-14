@@ -12,12 +12,12 @@ namespace ProjectFlow.API.Endpoints
         {
             var group = app.MapGroup("api/projects").WithTags("Projects");
 
-            group.MapGet("/", GetProjects);
-            group.MapGet("/{id}", GetProject);
-            group.MapGet("/{id}/with-tasks", GetProjectWithTasks);
-            group.MapPost("/", CreateProject);
-            group.MapPut("/{id}", UpdateProject);
-            group.MapDelete("/{id}", DeleteProject);
+            group.MapGet("/", GetProjects).RequireAuthorization();
+            group.MapGet("/{id}", GetProject).RequireAuthorization();
+            group.MapGet("/{id}/with-tasks", GetProjectWithTasks).RequireAuthorization();
+            group.MapPost("/", CreateProject).RequireAuthorization("ProjectManager");
+            group.MapPut("/{id}", UpdateProject).RequireAuthorization("ProjectManager");
+            group.MapDelete("/{id}", DeleteProject).RequireAuthorization("Admin");
         }
 
         private static async Task<IResult> GetProjects(IProjectRepository repository, IMapper mapper)

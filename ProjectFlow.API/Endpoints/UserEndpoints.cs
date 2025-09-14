@@ -7,6 +7,7 @@ using ProjectFlow.Core.Entities;
 using ProjectFlow.Core.Interfaces;
 using ProjectFlow.Core.Validators;
 using ProjectFlow.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ProjectFlow.API.Endpoints
 {
@@ -16,9 +17,9 @@ namespace ProjectFlow.API.Endpoints
         {
             var group = app.MapGroup("api/users").WithTags("Users");
 
-            group.MapGet("/", GetUsers);
-            group.MapGet("/{id}", GetUser);
-            group.MapPost("/", CreateUser);
+            group.MapGet("/", GetUsers).RequireAuthorization();
+            group.MapGet("/{id}", GetUser).RequireAuthorization();
+            group.MapPost("/", CreateUser).RequireAuthorization("Admin");
         }
 
         private static async Task<IResult> GetUsers(IUserRepository repository, IMapper mapper)

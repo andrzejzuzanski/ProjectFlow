@@ -13,15 +13,15 @@ namespace ProjectFlow.API.Endpoints
         {
             var group = app.MapGroup("/api/tasks").WithTags("Tasks");
 
-            group.MapGet("/project/{projectId}", GetTasksByProject);
-            group.MapGet("/user/{userId}", GetTasksByUser);
-            group.MapGet("/status/{status}", GetTasksByStatus);
-            group.MapGet("/priority/{priority}", GetTasksByPriority);
-            group.MapGet("/{id}", GetTask);
-            group.MapGet("/{id}/details", GetTaskWithDetails);
-            group.MapPost("/", CreateTask);
-            group.MapPut("/{id}", UpdateTask);
-            group.MapDelete("/{id}", DeleteTask);
+            group.MapGet("/project/{projectId}", GetTasksByProject).RequireAuthorization();
+            group.MapGet("/user/{userId}", GetTasksByUser).RequireAuthorization();
+            group.MapGet("/status/{status}", GetTasksByStatus).RequireAuthorization();
+            group.MapGet("/priority/{priority}", GetTasksByPriority).RequireAuthorization();
+            group.MapGet("/{id}", GetTask).RequireAuthorization();
+            group.MapGet("/{id}/details", GetTaskWithDetails).RequireAuthorization();
+            group.MapPost("/", CreateTask).RequireAuthorization("Developer");
+            group.MapPut("/{id}", UpdateTask).RequireAuthorization("Developer");
+            group.MapDelete("/{id}", DeleteTask).RequireAuthorization("ProjectManager");
         }
         private static async Task<IResult> GetTasksByProject(int projectId, ITaskRepository repository, IMapper mapper)
         {
