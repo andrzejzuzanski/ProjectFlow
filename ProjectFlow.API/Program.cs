@@ -1,6 +1,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using ProjectFlow.Infrastructure.Data;
+using ProjectFlow.API.Endpoints;
 
 namespace ProjectFlow.API
 {
@@ -10,13 +11,11 @@ namespace ProjectFlow.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            builder.Services.AddAuthorization();
             // Add DbContext with SQL Server provider
             builder.Services.AddDbContext<ProjectFlowDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            // Add authorization services
+            // Add services to the container.
             builder.Services.AddAuthorization();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -33,8 +32,10 @@ namespace ProjectFlow.API
             }
 
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
+
+            // Map endpoints
+            app.MapUserEndpoints();
 
             app.Run();
         }
