@@ -8,6 +8,7 @@ using ProjectFlow.Core.Interfaces;
 using ProjectFlow.Core.Validators;
 using ProjectFlow.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
+using Serilog;
 
 namespace ProjectFlow.API.Endpoints
 {
@@ -40,6 +41,7 @@ namespace ProjectFlow.API.Endpoints
         }
         private static async Task<IResult> CreateUser(CreateUserDto createUserDto, IUserRepository repository, IValidator<CreateUserDto> validator, IMapper mapper)
         {
+            Log.Information("Admin creating new user for {Email}", createUserDto.Email);
 
             var validationResult = await validator.ValidateAsync(createUserDto);
             if (!validationResult.IsValid)
@@ -60,6 +62,9 @@ namespace ProjectFlow.API.Endpoints
             var createdUser = await repository.CreateAsync(user);
 
             var newUserDto = mapper.Map<UserDto>(createdUser);
+
+            Log.Information("New user created by admin: {UserId} ({Email}) with role {Role}",
+                createdUser.Id, createdUser.Email, createdUser.Role);
 
             return Results.Created($"/api/users/{user.Id}", newUserDto);
         }
