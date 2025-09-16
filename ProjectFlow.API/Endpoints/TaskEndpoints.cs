@@ -87,7 +87,8 @@ namespace ProjectFlow.API.Endpoints
             IProjectRepository projectRepository,
             IUserRepository userRepository,
             IValidator<CreateTaskDto> validator,
-            IMapper mapper)
+            IMapper mapper,
+            INotificationService notificationService)
         {
             var validationResult = await validator.ValidateAsync(createDto);
             if (!validationResult.IsValid)
@@ -111,8 +112,10 @@ namespace ProjectFlow.API.Endpoints
             }
 
             var task = mapper.Map<ProjectTask>(createDto);
-
             var createdTask = await taskRepository.CreateAsync(task);
+
+            await notificationService.NotifyTaskCreated(createdTask);
+
             var taskDto = mapper.Map<TaskDto>(createdTask);
 
             return Results.Created($"/api/tasks/{createdTask.Id}", taskDto);
@@ -123,7 +126,8 @@ namespace ProjectFlow.API.Endpoints
             UpdateTaskDto updateDto,
             ITaskRepository taskRepository,
             IUserRepository userRepository,
-            IMapper mapper)
+            IMapper mapper,
+            INotificationService notificationService)
         {
             var existingTask = await taskRepository.GetByIdAsync(id);
             if (existingTask == null)
@@ -139,17 +143,26 @@ namespace ProjectFlow.API.Endpoints
             mapper.Map(updateDto, existingTask);
 
             var updatedTask = await taskRepository.UpdateAsync(existingTask);
+
+            await notificationService.NotifyTaskUpdated(updatedTask);
+
             var taskDto = mapper.Map<TaskDto>(updatedTask);
 
             return Results.Ok(taskDto);
         }
 
-        private static async Task<IResult> DeleteTask(int id, ITaskRepository repository)
+        private static async Task<IResult> DeleteTask(int id, ITaskRepository repository, INotificationService notificationService)
         {
+            var taskToDelete = await repository.GetByIdAsync(id);
+            if (taskToDelete == null)
+                return Results.NotFound();
+
             var success = await repository.DeleteAsync(id);
 
             if (!success)
                 return Results.NotFound();
+
+            await notificationService.NotifyTaskDeleted(id, taskToDelete.ProjectId);
 
             return Results.NoContent();
         }

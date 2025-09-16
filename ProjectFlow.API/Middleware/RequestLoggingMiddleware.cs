@@ -13,6 +13,12 @@ namespace ProjectFlow.API.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
+            if (context.Request.Path.StartsWithSegments("/hubs"))
+            {
+                await _next(context);
+                return;
+            }
+
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             // Log request

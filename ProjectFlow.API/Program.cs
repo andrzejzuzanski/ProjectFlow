@@ -6,7 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using ProjectFlow.API.Endpoints;
+using ProjectFlow.API.Hubs;
 using ProjectFlow.API.Middleware;
+//using ProjectFlow.API.Services;
 using ProjectFlow.Core.Configuration;
 using ProjectFlow.Core.Interfaces;
 using ProjectFlow.Core.Mappings;
@@ -58,11 +60,15 @@ namespace ProjectFlow.API
                     cfg.AddProfile<ProjectMappingProfile>();
                 });
 
+                // Add SignalR
+                builder.Services.AddSignalR();
+
                 // Configure JWT settings
                 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
-                // Add JWT Service
-                builder.Services.AddScoped<IJwtService, JwtService>();
+                // Add services
+                builder.Services.AddScoped<IJwtService, ProjectFlow.Infrastructure.Services.JwtService>();
+                builder.Services.AddScoped<INotificationService, ProjectFlow.API.Services.NotificationService>();
 
                 // Configure JWT Authentication
                 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
@@ -128,6 +134,8 @@ namespace ProjectFlow.API
 
                 var app = builder.Build();
 
+                Console.WriteLine("DEBUG: About to map hubs");
+
                 // Configure the HTTP request pipeline.
                 if (app.Environment.IsDevelopment())
                 {
@@ -135,18 +143,28 @@ namespace ProjectFlow.API
                     app.UseSwaggerUI();
                 }
 
-                // Request logging middleware
-                app.UseMiddleware<RequestLoggingMiddleware>();
+                // Enable serving static files
+                app.UseStaticFiles();
 
                 app.UseHttpsRedirection();
                 app.UseAuthentication();
                 app.UseAuthorization();
+
+                // Request logging middleware AFTER authentication
+                app.UseMiddleware<RequestLoggingMiddleware>();
+
+                // Map SignalR hubs
+                app.MapHub<TaskUpdatesHub>("/hubs/task-updates");
+                app.MapHub<SimpleHub>("/hubs/simple");
+                Console.WriteLine("DEBUG: Both hubs mapped");
 
                 // Map endpoints
                 app.MapAuthEndpoints();
                 app.MapUserEndpoints();
                 app.MapProjectEndpoints();
                 app.MapTaskEndpoints();
+
+                Console.WriteLine("DEBUG: All endpoints mapped, starting app");
 
                 app.Run();
 

@@ -79,7 +79,8 @@ namespace ProjectFlow.API.Endpoints
             int id,
             UpdateProjectDto updateDto,
             IProjectRepository repository,
-            IMapper mapper)
+            IMapper mapper,
+            INotificationService notificationService)
         {
             var existingProject = await repository.GetByIdAsync(id);
             if (existingProject == null)
@@ -88,6 +89,9 @@ namespace ProjectFlow.API.Endpoints
             mapper.Map(updateDto, existingProject);
 
             var updatedProject = await repository.UpdateAsync(existingProject);
+
+            await notificationService.NotifyProjectUpdated(updatedProject);
+
             var projectDto = mapper.Map<ProjectDto>(updatedProject);
 
             return Results.Ok(projectDto);

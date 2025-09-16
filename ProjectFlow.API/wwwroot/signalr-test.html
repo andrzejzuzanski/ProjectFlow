@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>ProjectFlow SignalR Test</title>
+    <script src="https://unpkg.com/@microsoft/signalr@latest/dist/browser/signalr.js"></script>
+</head>
+<body>
+    <h1>ProjectFlow SignalR Test</h1>
+    <div id="messages"></div>
+
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/simple")
+            .build();
+
+        connection.start().then(function () {
+            console.log("Connected successfully!");
+
+            setTimeout(() => {
+                console.log("Invoking Test...");
+                connection.invoke("Test")
+                    .then(result => {
+                        console.log("Success! Result:", result);
+                    })
+                    .catch(err => {
+                        console.error("Invoke error:", err);
+                    });
+            }, 1000);
+
+        }).catch(function (err) {
+            console.error("Connection error:", err);
+        });
+
+        connection.on("HelloResponse", function (message) {
+            console.log("Received:", message);
+        });
+
+        function addMessage(message) {
+            const div = document.createElement("div");
+            div.textContent = new Date().toLocaleTimeString() + ": " + message;
+            document.getElementById("messages").appendChild(div);
+        }
+    </script>
+</body>
+</html>
