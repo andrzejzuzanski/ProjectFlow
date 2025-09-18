@@ -3,8 +3,10 @@ import { useMutation } from "@tanstack/react-query";
 import { authService } from "../services/authService";
 import type { LoginRequest } from "../services/authService";
 import { api } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function LoginPage() {
+  const { login } = useAuth();
   const [formData, setFormData] = useState<LoginRequest>({
     email: "",
     password: "",
@@ -13,13 +15,12 @@ export default function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: authService.login,
     onSuccess: (data) => {
-      console.log("Login successful:", data);
+      console.log("Login success:", data);
 
-      localStorage.setItem("authToken", data.token);
+      login(data.token, data.user);
       localStorage.setItem("refreshToken", data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(data.user));
 
-      console.log("Token saved");
+      console.log("Logged in! Redirecting to dashboard...");
     },
     onError: (error) => {
       console.error("Login error:", error);
