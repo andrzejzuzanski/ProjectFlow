@@ -8,10 +8,16 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import "./App.css";
+import ProjectsPage from "./pages/ProjectsPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div style={{ padding: "20px" }}>Loading...</div>;
+  }
+
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
@@ -41,6 +47,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <ProjectsPage />
           </ProtectedRoute>
         }
       />

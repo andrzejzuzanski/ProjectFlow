@@ -1,4 +1,5 @@
 import { useAuth } from "../contexts/AuthContext";
+import { Link } from "react-router-dom";
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
@@ -40,6 +41,7 @@ export default function DashboardPage() {
           backgroundColor: "#f8f9fa",
           padding: "15px",
           borderRadius: "5px",
+          color: "black",
         }}
       >
         <h3>
@@ -60,6 +62,21 @@ export default function DashboardPage() {
         <h3>Quick Stats</h3>
         <p>Dashboard is ready for project management features!</p>
         <p>Next: Projects list, Kanban board, user management</p>
+
+        <div style={{ marginTop: "15px" }}>
+          <Link
+            to="/projects"
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#28a745",
+              color: "white",
+              textDecoration: "none",
+              borderRadius: "4px",
+            }}
+          >
+            Go to Projects →
+          </Link>
+        </div>
       </div>
     </div>
   );
