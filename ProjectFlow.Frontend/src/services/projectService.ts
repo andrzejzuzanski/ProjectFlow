@@ -25,11 +25,8 @@ export interface CreateProjectRequest {
 export const projectService = {
   // Get all projects
   getAll: async (): Promise<Project[]> => {
-    console.log("1. Starting API call...");
     try {
       const response = await api.get("/projects");
-      console.log("2. API response:", response.data);
-      console.log("3. Returning data...");
       return response.data;
     } catch (error) {
       console.error("4. API error:", error);

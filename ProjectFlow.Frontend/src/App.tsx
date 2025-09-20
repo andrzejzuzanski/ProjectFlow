@@ -13,11 +13,9 @@ import ProjectsPage from "./pages/ProjectsPage";
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-
   if (isLoading) {
     return <div style={{ padding: "20px" }}>Loading...</div>;
   }
-
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 

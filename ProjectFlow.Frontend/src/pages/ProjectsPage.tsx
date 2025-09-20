@@ -1,8 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { projectService } from "../services/projectService";
 import type { Project } from "../services/projectService";
+import { useState } from "react";
+import CreateProjectForm from "../components/CreateProjectForm";
 
 export default function ProjectsPage() {
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
   const {
     data: projects,
     isLoading,
@@ -43,6 +47,7 @@ export default function ProjectsPage() {
       >
         <h1>Projects</h1>
         <button
+          onClick={() => setShowCreateForm(true)}
           style={{
             padding: "10px 20px",
             backgroundColor: "#007bff",
@@ -124,6 +129,12 @@ export default function ProjectsPage() {
             </div>
           ))}
         </div>
+      )}
+      {showCreateForm && (
+        <CreateProjectForm
+          onSuccess={() => setShowCreateForm(false)}
+          onCancel={() => setShowCreateForm(false)}
+        />
       )}
     </div>
   );
