@@ -3,6 +3,7 @@ import { projectService } from "../services/projectService";
 import type { Project } from "../services/projectService";
 import { useState } from "react";
 import CreateProjectForm from "../components/CreateProjectForm";
+import { Link } from "react-router-dom";
 
 export default function ProjectsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -125,6 +126,27 @@ export default function ProjectsPage() {
                     {getStatusName(project.status)}
                   </span>
                 </div>
+              </div>
+              <div
+                style={{
+                  marginTop: "15px",
+                  paddingTop: "15px",
+                  borderTop: "1px solid #f0f0f0",
+                }}
+              >
+                <Link
+                  to={`/projects/${project.id}/tasks`}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "#28a745",
+                    color: "white",
+                    textDecoration: "none",
+                    borderRadius: "4px",
+                    fontSize: "14px",
+                  }}
+                >
+                  View Tasks ({project.taskCount})
+                </Link>
               </div>
             </div>
           ))}

@@ -46,8 +46,9 @@ namespace ProjectFlow.Infrastructure.Repositories
         public async Task<IEnumerable<Project>> GetAllActiveAsync()
         {
             return await _context.Projects
-                .Where(p => p.IsActive)
                 .Include(p => p.CreatedBy)
+                .Include(p => p.Tasks)
+                .Where(p => p.IsActive)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
         }

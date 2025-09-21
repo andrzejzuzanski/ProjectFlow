@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import "./App.css";
 import ProjectsPage from "./pages/ProjectsPage";
+import TakskPage from "./pages/TasksPage";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:projectId/tasks"
+        element={
+          <ProtectedRoute>
+            <TakskPage />
           </ProtectedRoute>
         }
       />

@@ -25,7 +25,6 @@ export default function CreateProjectForm({ onSuccess, onCancel }: Props) {
     mutationFn: projectService.create,
     onSuccess: (newProject) => {
       console.log("Project created:", newProject);
-      // Refresh projects list
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       onSuccess?.();
     },
@@ -52,6 +51,7 @@ export default function CreateProjectForm({ onSuccess, onCancel }: Props) {
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000,
+        color: "black",
       }}
     >
       <div
