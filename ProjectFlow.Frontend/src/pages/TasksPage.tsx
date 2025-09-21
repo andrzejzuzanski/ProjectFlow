@@ -9,10 +9,12 @@ import {
 import type { Task } from "../services/taskService";
 import { useState } from "react";
 import CreateTaskForm from "../components/CreateTaskForm";
+import KanbanBoard from "../components/KanbanBoard";
 
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
   const queryClient = useQueryClient();
   const {
@@ -53,28 +55,81 @@ export default function TasksPage() {
           marginBottom: "20px",
         }}
       >
-        <div>
-          <Link
-            to="/projects"
-            style={{ color: "#007bff", textDecoration: "none" }}
-          >
-            ← Back to Projects
-          </Link>
-          <h1>Tasks - Project #{projectId}</h1>
-        </div>
-        <button
-          onClick={() => setShowCreateForm(true)}
+        <div
           style={{
-            padding: "10px 20px",
-            backgroundColor: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "20px",
           }}
         >
-          + New Task
-        </button>
+          <div>
+            <Link
+              to="/projects"
+              style={{ color: "#007bff", textDecoration: "none" }}
+            >
+              ← Back to Projects
+            </Link>
+            <h1>Tasks - Project #{projectId}</h1>
+          </div>
+
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            {/* View Mode Toggle */}
+            <div
+              style={{
+                display: "flex",
+                backgroundColor: "#f8f9fa",
+                borderRadius: "6px",
+                padding: "2px",
+              }}
+            >
+              <button
+                onClick={() => setViewMode("list")}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor:
+                    viewMode === "list" ? "#007bff" : "transparent",
+                  color: viewMode === "list" ? "white" : "#007bff",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                }}
+              >
+                📋 List
+              </button>
+              <button
+                onClick={() => setViewMode("kanban")}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor:
+                    viewMode === "kanban" ? "#007bff" : "transparent",
+                  color: viewMode === "kanban" ? "white" : "#007bff",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                }}
+              >
+                📊 Kanban
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowCreateForm(true)}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              + New Task
+            </button>
+          </div>
+        </div>
       </div>
 
       {!tasks || tasks.length === 0 ? (
@@ -82,6 +137,8 @@ export default function TasksPage() {
           <h3>No tasks yet</h3>
           <p>Create your first task to get started!</p>
         </div>
+      ) : viewMode === "kanban" ? (
+        <KanbanBoard tasks={tasks} onTaskStatusChange={handleStatusChange} />
       ) : (
         <div style={{ display: "grid", gap: "15px" }}>
           {tasks.map((task: Task) => (
@@ -164,17 +221,17 @@ export default function TasksPage() {
                     {getPriorityName(task.priority)}
                   </span>
                 </div>
-                {showCreateForm && (
-                  <CreateTaskForm
-                    projectId={Number(projectId)}
-                    onSuccess={() => setShowCreateForm(false)}
-                    onCancel={() => setShowCreateForm(false)}
-                  />
-                )}
               </div>
             </div>
           ))}
         </div>
+      )}
+      {showCreateForm && (
+        <CreateTaskForm
+          projectId={Number(projectId)}
+          onSuccess={() => setShowCreateForm(false)}
+          onCancel={() => setShowCreateForm(false)}
+        />
       )}
     </div>
   );
