@@ -8,7 +8,6 @@ using Microsoft.OpenApi.Models;
 using ProjectFlow.API.Endpoints;
 using ProjectFlow.API.Hubs;
 using ProjectFlow.API.Middleware;
-//using ProjectFlow.API.Services;
 using ProjectFlow.Core.Configuration;
 using ProjectFlow.Core.Interfaces;
 using ProjectFlow.Core.Mappings;
@@ -70,7 +69,8 @@ namespace ProjectFlow.API
                     {
                         policy.WithOrigins("http://localhost:5173", "https://localhost:5173")
                               .AllowAnyHeader()
-                              .AllowAnyMethod();
+                              .AllowAnyMethod()
+                              .AllowCredentials();
                     });
                 });
 
@@ -145,8 +145,6 @@ namespace ProjectFlow.API
 
                 var app = builder.Build();
 
-                Console.WriteLine("DEBUG: About to map hubs");
-
                 // Configure the HTTP request pipeline.
                 if (app.Environment.IsDevelopment())
                 {
@@ -167,9 +165,9 @@ namespace ProjectFlow.API
                 app.UseMiddleware<RequestLoggingMiddleware>();
 
                 // Map SignalR hubs
-                app.MapHub<TaskUpdatesHub>("/hubs/task-updates");
+                app.MapHub<TaskUpdatesHub>("/hubs/task-updates")
+                    .RequireCors("ReactApp"); ;
                 app.MapHub<SimpleHub>("/hubs/simple");
-                Console.WriteLine("DEBUG: Both hubs mapped");
 
                 // Map endpoints
                 app.MapAuthEndpoints();

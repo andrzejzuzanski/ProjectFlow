@@ -10,6 +10,8 @@ import type { Task } from "../services/taskService";
 import { useState } from "react";
 import CreateTaskForm from "../components/CreateTaskForm";
 import KanbanBoard from "../components/KanbanBoard";
+import { signalRService } from "../services/signalRService";
+import { useEffect } from "react";
 
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -26,6 +28,45 @@ export default function TasksPage() {
     queryFn: () => taskService.getByProject(Number(projectId)),
     enabled: !!projectId,
   });
+
+  useEffect(() => {
+    const setupSignalR = async () => {
+      try {
+        await signalRService.startConnection();
+
+        if (projectId) {
+          await signalRService.joinProject(Number(projectId));
+
+          // Live task created
+          signalRService.onTaskCreated((taskNotification) => {
+            console.log("Task created:", taskNotification);
+            queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+          });
+
+          // Live task updated
+          signalRService.onTaskUpdated((taskNotification) => {
+            console.log("Task updated:", taskNotification);
+            queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+          });
+
+          // Live task deleted
+          signalRService.onTaskDeleted((deleteNotification) => {
+            console.log("Task deleted:", deleteNotification);
+            queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+          });
+        }
+      } catch (error) {
+        console.error("SignalR setup failed:", error);
+      }
+    };
+
+    setupSignalR();
+
+    // Cleanup
+    return () => {
+      signalRService.leaveProject();
+    };
+  }, [projectId, queryClient]);
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, status }: { taskId: number; status: TaskStatus }) =>
