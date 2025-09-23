@@ -50,8 +50,19 @@ class SignalRService {
   }
 
   async leaveProject(): Promise<void> {
-    if (this.connection && this.currentProjectId) {
-      await this.connection.invoke("LeaveProjectGroup", this.currentProjectId);
+    if (
+      this.connection &&
+      this.currentProjectId &&
+      this.connection.state === "Connected"
+    ) {
+      try {
+        await this.connection.invoke(
+          "LeaveProjectGroup",
+          this.currentProjectId.toString()
+        );
+      } catch (error) {
+        console.warn("Failed to leave project group:", error);
+      }
       this.currentProjectId = null;
     }
   }
@@ -68,10 +79,20 @@ class SignalRService {
     this.connection?.on("TaskDeleted", callback);
   }
 
+  offAllEvents(): void {
+    this.connection?.off("TaskCreated");
+    this.connection?.off("TaskUpdated");
+    this.connection?.off("TaskDeleted");
+  }
+
   async stopConnection(): Promise<void> {
     if (this.connection) {
       await this.leaveProject();
-      await this.connection.stop();
+      try {
+        await this.connection.stop();
+      } catch (error) {
+        console.warn("SignalR disconnect error:", error);
+      }
       console.log("SignalR Disconnected");
     }
   }

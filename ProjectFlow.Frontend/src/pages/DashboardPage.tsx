@@ -1,5 +1,6 @@
 import { useAuth } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
+import { toastService } from "../services/toastService";
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
@@ -22,6 +23,9 @@ export default function DashboardPage() {
         }}
       >
         <h1>ProjectFlow Dashboard</h1>
+        <button onClick={() => toastService.success("Test", "Toast works!")}>
+          Test Toast
+        </button>
         <button
           onClick={logout}
           style={{

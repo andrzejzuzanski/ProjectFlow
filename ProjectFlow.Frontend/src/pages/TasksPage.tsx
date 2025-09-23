@@ -12,6 +12,7 @@ import CreateTaskForm from "../components/CreateTaskForm";
 import KanbanBoard from "../components/KanbanBoard";
 import { signalRService } from "../services/signalRService";
 import { useEffect } from "react";
+import { toastService } from "../services/toastService";
 
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -37,22 +38,42 @@ export default function TasksPage() {
         if (projectId) {
           await signalRService.joinProject(Number(projectId));
 
-          // Live task created
+          // Cleanup poprzednie listenery PRZED dodaniem nowych
+          signalRService.offAllEvents();
+
+          // Dodaj nowe listenery
           signalRService.onTaskCreated((taskNotification) => {
-            console.log("Task created:", taskNotification);
-            queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            // Filtruj tylko dla tego projektu
+            if (taskNotification.projectId === Number(projectId)) {
+              toastService.success(
+                "Task Created",
+                `"${taskNotification.title}" was added`
+              );
+              queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            }
           });
 
-          // Live task updated
           signalRService.onTaskUpdated((taskNotification) => {
-            console.log("Task updated:", taskNotification);
-            queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            if (taskNotification.projectId === Number(projectId)) {
+              const statusNames = ["To Do", "In Progress", "Review", "Done"];
+              toastService.info(
+                "Task Updated",
+                `"${taskNotification.title}" moved to ${
+                  statusNames[taskNotification.status]
+                }`
+              );
+              queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            }
           });
 
-          // Live task deleted
           signalRService.onTaskDeleted((deleteNotification) => {
-            console.log("Task deleted:", deleteNotification);
-            queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            if (deleteNotification.projectId === Number(projectId)) {
+              toastService.warning(
+                "Task Deleted",
+                `Task #${deleteNotification.taskId} was removed`
+              );
+              queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            }
           });
         }
       } catch (error) {
@@ -62,7 +83,6 @@ export default function TasksPage() {
 
     setupSignalR();
 
-    // Cleanup
     return () => {
       signalRService.leaveProject();
     };

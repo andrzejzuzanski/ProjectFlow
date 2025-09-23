@@ -10,6 +10,7 @@ import DashboardPage from "./pages/DashboardPage";
 import "./App.css";
 import ProjectsPage from "./pages/ProjectsPage";
 import TakskPage from "./pages/TasksPage";
+import ToastContainer from "./components/ToastContainer";
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -76,6 +77,7 @@ function App() {
       <Router>
         <div className="App">
           <AppRoutes />
+          <ToastContainer />
         </div>
       </Router>
     </AuthProvider>
