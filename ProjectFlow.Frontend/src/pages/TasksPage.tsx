@@ -15,6 +15,8 @@ import { signalRService } from "../services/signalRService";
 import { useEffect } from "react";
 import { toastService } from "../services/toastService";
 import { userService } from "../services/userService";
+import TaskTimer from "../components/TaskTimer";
+import { timeTrackingService } from "../services/timeTrackingService";
 
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -45,6 +47,12 @@ export default function TasksPage() {
     queryFn: userService.getAll,
   });
 
+  const { data: activeTimer } = useQuery({
+    queryKey: ["activeTimer"],
+    queryFn: timeTrackingService.getActiveTimer,
+    refetchInterval: 30000,
+  });
+
   useEffect(() => {
     const setupSignalR = async () => {
       try {
@@ -53,18 +61,37 @@ export default function TasksPage() {
         if (projectId) {
           await signalRService.joinProject(Number(projectId));
 
-          // Cleanup poprzednie listenery PRZED dodaniem nowych
           signalRService.offAllEvents();
 
-          // Dodaj nowe listenery
           signalRService.onTaskCreated((taskNotification) => {
-            // Filtruj tylko dla tego projektu
             if (taskNotification.projectId === Number(projectId)) {
               toastService.success(
                 "Task Created",
                 `"${taskNotification.title}" was added`
               );
               queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            }
+          });
+
+          signalRService.onTimerStarted((timerNotification) => {
+            if (timerNotification.taskId) {
+              toastService.info(
+                "Timer Started",
+                `${timerNotification.userName} started timer on "${timerNotification.taskTitle}"`
+              );
+              queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+              queryClient.invalidateQueries({ queryKey: ["activeTimer"] });
+            }
+          });
+
+          signalRService.onTimerStopped((timerNotification) => {
+            if (timerNotification.taskId) {
+              toastService.success(
+                "Timer Stopped",
+                `${timerNotification.userName} logged ${timerNotification.durationMinutes} minutes`
+              );
+              queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+              queryClient.invalidateQueries({ queryKey: ["activeTimer"] });
             }
           });
 
@@ -119,21 +146,17 @@ export default function TasksPage() {
     if (!tasks) return [];
 
     return tasks.filter((task) => {
-      // Search term filter
       const matchesSearch =
         searchTerm === "" ||
         task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         task.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Status filter
       const matchesStatus =
         filterStatus === "all" || task.status === filterStatus;
 
-      // Priority filter
       const matchesPriority =
         filterPriority === "all" || task.priority === filterPriority;
 
-      // Assignee filter
       const matchesAssignee =
         filterAssignee === "all" ||
         (filterAssignee === 0
@@ -162,7 +185,6 @@ export default function TasksPage() {
 
   return (
     <>
-      {/* CSS Animation */}
       <style>{`
         @keyframes slideDown {
           from {
@@ -196,7 +218,6 @@ export default function TasksPage() {
           </div>
 
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            {/* Search Bar */}
             <div style={{ position: "relative" }}>
               <input
                 type="text"
@@ -224,7 +245,6 @@ export default function TasksPage() {
               </span>
             </div>
 
-            {/* Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               style={{
@@ -261,7 +281,6 @@ export default function TasksPage() {
               )}
             </button>
 
-            {/* View Mode Toggle */}
             <div
               style={{
                 display: "flex",
@@ -318,7 +337,6 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {/* Advanced Filters Panel */}
         {showFilters && (
           <div
             style={{
@@ -337,7 +355,6 @@ export default function TasksPage() {
                 gap: "15px",
               }}
             >
-              {/* Status Filter */}
               <div>
                 <label
                   style={{
@@ -373,7 +390,6 @@ export default function TasksPage() {
                 </select>
               </div>
 
-              {/* Priority Filter */}
               <div>
                 <label
                   style={{
@@ -409,7 +425,6 @@ export default function TasksPage() {
                 </select>
               </div>
 
-              {/* Assignee Filter */}
               <div>
                 <label
                   style={{
@@ -445,7 +460,6 @@ export default function TasksPage() {
                 </select>
               </div>
 
-              {/* Clear Filters */}
               <div style={{ display: "flex", alignItems: "flex-end" }}>
                 <button
                   onClick={() => {
@@ -469,7 +483,6 @@ export default function TasksPage() {
               </div>
             </div>
 
-            {/* Results Count */}
             <div style={{ marginTop: "15px", fontSize: "14px", color: "#666" }}>
               Showing {filteredTasks.length} of {tasks?.length || 0} tasks
             </div>
@@ -584,6 +597,18 @@ export default function TasksPage() {
                     </span>
                   </div>
                 </div>
+                <TaskTimer
+                  taskId={task.id}
+                  taskTitle={task.title}
+                  hasActiveTimer={activeTimer?.taskId === task.id}
+                  activeTimerStart={
+                    activeTimer?.taskId === task.id
+                      ? activeTimer.startTime
+                      : undefined
+                  }
+                  totalTimeMinutes={task.totalTimeMinutes || 0}
+                  style={{ pointerEvents: "none" }}
+                />
               </div>
             ))}
           </div>

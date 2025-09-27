@@ -48,6 +48,7 @@ namespace ProjectFlow.API
                 builder.Services.AddScoped<IUserRepository, UserRepository>();
                 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
                 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+                builder.Services.AddScoped<ITimeEntryRepository, TimeEntryRepository>();
 
                 //Add FluentValidation
                 builder.Services.AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>();
@@ -57,6 +58,7 @@ namespace ProjectFlow.API
                 {
                     cfg.AddProfile<UserMappingProfile>();
                     cfg.AddProfile<ProjectMappingProfile>();
+                    cfg.AddProfile<TimeEntryMappingProfile>();
                 });
 
                 // Add SignalR
@@ -174,6 +176,7 @@ namespace ProjectFlow.API
                 app.MapUserEndpoints();
                 app.MapProjectEndpoints();
                 app.MapTaskEndpoints();
+                app.MapTimeEntryEndpoints();
 
                 Console.WriteLine("DEBUG: All endpoints mapped, starting app");
 

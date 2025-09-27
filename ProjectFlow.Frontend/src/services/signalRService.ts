@@ -20,6 +20,15 @@ interface TaskDeletedNotification {
   projectId: number;
 }
 
+interface TimerNotification {
+  taskId: number;
+  userId: number;
+  userName: string;
+  startTime?: string;
+  durationMinutes?: number;
+  taskTitle: string;
+}
+
 class SignalRService {
   private connection: HubConnection | null = null;
   private currentProjectId: number | null = null;
@@ -79,10 +88,20 @@ class SignalRService {
     this.connection?.on("TaskDeleted", callback);
   }
 
+  onTimerStarted(callback: (data: TimerNotification) => void): void {
+    this.connection?.on("TimerStarted", callback);
+  }
+
+  onTimerStopped(callback: (data: TimerNotification) => void): void {
+    this.connection?.on("TimerStopped", callback);
+  }
+
   offAllEvents(): void {
     this.connection?.off("TaskCreated");
     this.connection?.off("TaskUpdated");
     this.connection?.off("TaskDeleted");
+    this.connection?.off("TimerStarted");
+    this.connection?.off("TimerStopped");
   }
 
   async stopConnection(): Promise<void> {

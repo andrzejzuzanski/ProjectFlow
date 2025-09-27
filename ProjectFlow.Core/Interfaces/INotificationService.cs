@@ -13,5 +13,7 @@ namespace ProjectFlow.Core.Interfaces
         Task NotifyTaskUpdated(ProjectTask task);
         Task NotifyTaskDeleted(int taskId, int projectId);
         Task NotifyProjectUpdated(Project project);
+        Task NotifyTimerStarted(TimeEntry timeEntry);
+        Task NotifyTimerStopped(TimeEntry timeEntry);
     }
 }

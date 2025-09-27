@@ -81,6 +81,16 @@ namespace ProjectFlow.Core.Mappings
                 .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.Project, opt => opt.Ignore())
                 .ForMember(dest => dest.AssignedTo, opt => opt.Ignore());
+
+            CreateMap<ProjectTask, TaskDto>()
+                .ForMember(dest => dest.ProjectName, opt => opt.MapFrom(src => src.Project.Name))
+                .ForMember(dest => dest.AssignedToName,
+        opt => opt.MapFrom(src => src.AssignedTo != null
+            ? $"{src.AssignedTo.FirstName} {src.AssignedTo.LastName}"
+            : null))
+                .ForMember(dest => dest.TotalTimeMinutes, opt => opt.Ignore())
+                .ForMember(dest => dest.HasActiveTimer, opt => opt.Ignore())
+                .ForMember(dest => dest.ActiveTimerStart, opt => opt.Ignore());
         }
     }
 }

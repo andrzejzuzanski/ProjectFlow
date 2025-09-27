@@ -86,5 +86,40 @@ namespace ProjectFlow.API.Services
 
             Log.Information("Sent ProjectUpdated notification for project {ProjectId}", project.Id);
         }
+        public async Task NotifyTimerStarted(TimeEntry timeEntry)
+        {
+            var hubContext = _serviceProvider.GetRequiredService<IHubContext<TaskUpdatesHub>>();
+            var groupName = $"Project_{timeEntry.Task.ProjectId}";
+
+            await hubContext.Clients.Group(groupName).SendAsync("TimerStarted", new
+            {
+                TaskId = timeEntry.TaskId,
+                UserId = timeEntry.UserId,
+                UserName = $"{timeEntry.User.FirstName} {timeEntry.User.LastName}",
+                StartTime = timeEntry.StartTime,
+                TaskTitle = timeEntry.Task.Title
+            });
+
+            Log.Information("Sent TimerStarted notification for task {TaskId} by user {UserId}",
+                timeEntry.TaskId, timeEntry.UserId);
+        }
+
+        public async Task NotifyTimerStopped(TimeEntry timeEntry)
+        {
+            var hubContext = _serviceProvider.GetRequiredService<IHubContext<TaskUpdatesHub>>();
+            var groupName = $"Project_{timeEntry.Task.ProjectId}";
+
+            await hubContext.Clients.Group(groupName).SendAsync("TimerStopped", new
+            {
+                TaskId = timeEntry.TaskId,
+                UserId = timeEntry.UserId,
+                UserName = $"{timeEntry.User.FirstName} {timeEntry.User.LastName}",
+                DurationMinutes = timeEntry.DurationMinutes,
+                TaskTitle = timeEntry.Task.Title
+            });
+
+            Log.Information("Sent TimerStopped notification for task {TaskId} by user {UserId}",
+                timeEntry.TaskId, timeEntry.UserId);
+        }
     }
 }

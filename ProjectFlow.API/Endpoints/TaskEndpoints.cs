@@ -4,6 +4,7 @@ using ProjectFlow.Core.DTOs;
 using ProjectFlow.Core.Entities;
 using ProjectFlow.Core.Enums;
 using ProjectFlow.Core.Interfaces;
+using ProjectFlow.Infrastructure.Repositories;
 
 namespace ProjectFlow.API.Endpoints
 {
@@ -23,10 +24,19 @@ namespace ProjectFlow.API.Endpoints
             group.MapPut("/{id}", UpdateTask).RequireAuthorization("Developer");
             group.MapDelete("/{id}", DeleteTask).RequireAuthorization("ProjectManager");
         }
-        private static async Task<IResult> GetTasksByProject(int projectId, ITaskRepository repository, IMapper mapper)
+        private static async Task<IResult> GetTasksByProject(int projectId, ITaskRepository repository,ITimeEntryRepository timeEntryRepository, IMapper mapper)
         {
             var tasks = await repository.GetAllByProjectIdAsync(projectId);
             var taskDtos = mapper.Map<IEnumerable<TaskDto>>(tasks);
+
+            foreach (var taskDto in taskDtos)
+            {
+                taskDto.TotalTimeMinutes = await timeEntryRepository.GetTotalTimeMinutesByTaskIdAsync(taskDto.Id);
+                var activeTimer = await timeEntryRepository.GetActiveTimerByTaskIdAsync(taskDto.Id);
+                taskDto.HasActiveTimer = activeTimer != null;
+                taskDto.ActiveTimerStart = activeTimer?.StartTime;
+            }
+
             return Results.Ok(taskDtos);
         }
 

@@ -21,6 +21,9 @@ namespace ProjectFlow.Core.DTOs
         public DateTime? DueDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public int TotalTimeMinutes { get; set; }
+        public bool HasActiveTimer { get; set; }
+        public DateTime? ActiveTimerStart { get; set; }
     }
     public class CreateTaskDto
     {
@@ -46,5 +49,6 @@ namespace ProjectFlow.Core.DTOs
     {
         public string ProjectDescription { get; set; } = string.Empty;
         public string ProjectCreatedByName { get; set; } = string.Empty;
+        public IEnumerable<TimeEntryDto> TimeEntries { get; set; } = new List<TimeEntryDto>();
     }
 }

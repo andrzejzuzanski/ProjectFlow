@@ -20,10 +20,25 @@ import {
 } from "../services/taskService";
 import type { Task } from "../services/taskService";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import TaskTimer from "./TaskTimer";
+import { timeTrackingService } from "../services/timeTrackingService";
+import { useQuery } from "@tanstack/react-query";
 
 interface KanbanBoardProps {
   tasks: Task[];
   onTaskStatusChange: (taskId: number, newStatus: TaskStatus) => void;
+}
+
+interface ActiveTimer {
+  taskId: number;
+  startTime: string;
+  id: number;
+  userId: number;
+  userName: string;
+  endTime?: string;
+  durationMinutes: number;
+  description: string;
+  createdAt: string;
 }
 
 const columns = [
@@ -33,7 +48,6 @@ const columns = [
   { id: TaskStatus.Done, title: "Done", color: "#28a745" },
 ];
 
-// Dodaj Droppable Column Component:
 function DroppableColumn({
   children,
   id,
@@ -77,8 +91,13 @@ function DroppableColumn({
   );
 }
 
-// Zmień TaskCard - usuń SortableContext logic:
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({
+  task,
+  activeTimer,
+}: {
+  task: Task;
+  activeTimer?: ActiveTimer | null;
+}) {
   const {
     attributes,
     listeners,
@@ -127,6 +146,16 @@ function TaskCard({ task }: { task: Task }) {
             : task.description}
         </p>
 
+        <TaskTimer
+          taskId={task.id}
+          taskTitle={task.title}
+          hasActiveTimer={activeTimer?.taskId === task.id}
+          activeTimerStart={
+            activeTimer?.taskId === task.id ? activeTimer.startTime : undefined
+          }
+          totalTimeMinutes={task.totalTimeMinutes || 0}
+        />
+
         <div
           style={{
             display: "flex",
@@ -155,11 +184,16 @@ function TaskCard({ task }: { task: Task }) {
   );
 }
 
-// Główny component - zmień return:
 export default function KanbanBoard({
   tasks,
   onTaskStatusChange,
 }: KanbanBoardProps) {
+  const { data: activeTimer } = useQuery({
+    queryKey: ["activeTimer"],
+    queryFn: timeTrackingService.getActiveTimer,
+    refetchInterval: 30000,
+  });
+
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -182,8 +216,31 @@ export default function KanbanBoard({
     }
 
     const taskId = Number(active.id);
-    const newStatus = Number(over.id) as TaskStatus;
+    const overId = Number(over.id);
 
+    const validStatuses = [
+      TaskStatus.ToDo,
+      TaskStatus.InProgress,
+      TaskStatus.Review,
+      TaskStatus.Done,
+    ];
+
+    if (!validStatuses.includes(overId as TaskStatus)) {
+      console.log("Invalid drop target, ignoring:", overId);
+      setActiveTask(null);
+      return;
+    }
+
+    const newStatus = overId as TaskStatus;
+    const currentTask = tasks.find((t) => t.id === taskId);
+
+    if (currentTask && currentTask.status === newStatus) {
+      console.log("Same status, ignoring move");
+      setActiveTask(null);
+      return;
+    }
+
+    console.log("Valid status change:", { taskId, newStatus });
     onTaskStatusChange(taskId, newStatus);
     setActiveTask(null);
   };
@@ -217,7 +274,11 @@ export default function KanbanBoard({
                 strategy={verticalListSortingStrategy}
               >
                 {columnTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} />
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    activeTimer={activeTimer}
+                  />
                 ))}
               </SortableContext>
             </DroppableColumn>
@@ -226,7 +287,9 @@ export default function KanbanBoard({
       </div>
 
       <DragOverlay>
-        {activeTask ? <TaskCard task={activeTask} /> : null}
+        {activeTask ? (
+          <TaskCard task={activeTask} activeTimer={activeTimer} />
+        ) : null}
       </DragOverlay>
     </DndContext>
   );

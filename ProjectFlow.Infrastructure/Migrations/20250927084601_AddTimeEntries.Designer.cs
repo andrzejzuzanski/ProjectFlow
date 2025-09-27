@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProjectFlow.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using ProjectFlow.Infrastructure.Data;
 namespace ProjectFlow.Infrastructure.Migrations
 {
     [DbContext(typeof(ProjectFlowDbContext))]
-    partial class ProjectFlowDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250927084601_AddTimeEntries")]
+    partial class AddTimeEntries
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -34,6 +34,9 @@ export interface Task {
   dueDate?: string;
   createdAt: string;
   updatedAt?: string;
+  totalTimeMinutes: number;
+  hasActiveTimer: boolean;
+  activeTimerStart?: string;
 }
 
 export interface CreateTaskRequest {
@@ -107,7 +110,6 @@ export const taskService = {
   },
 };
 
-// Helper functions dla UI
 export const getStatusName = (status: TaskStatus): string => {
   const statusNames = {
     [TaskStatus.ToDo]: "To Do",
