@@ -5,6 +5,7 @@ import {
   getPriorityName,
   getPriorityColor,
   TaskStatus,
+  TaskPriority,
 } from "../services/taskService";
 import type { Task } from "../services/taskService";
 import { useState } from "react";
@@ -13,13 +14,22 @@ import KanbanBoard from "../components/KanbanBoard";
 import { signalRService } from "../services/signalRService";
 import { useEffect } from "react";
 import { toastService } from "../services/toastService";
+import { userService } from "../services/userService";
 
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<TaskStatus | "all">("all");
+  const [filterPriority, setFilterPriority] = useState<TaskPriority | "all">(
+    "all"
+  );
+  const [filterAssignee, setFilterAssignee] = useState<number | "all">("all");
+  const [showFilters, setShowFilters] = useState(false);
 
   const queryClient = useQueryClient();
+
   const {
     data: tasks,
     isLoading,
@@ -28,6 +38,11 @@ export default function TasksPage() {
     queryKey: ["tasks", projectId],
     queryFn: () => taskService.getByProject(Number(projectId)),
     enabled: !!projectId,
+  });
+
+  const { data: users } = useQuery({
+    queryKey: ["users"],
+    queryFn: userService.getAll,
   });
 
   useEffect(() => {
@@ -100,6 +115,45 @@ export default function TasksPage() {
     updateTaskMutation.mutate({ taskId, status: newStatus });
   };
 
+  const getFilteredTasks = (tasks: Task[] | undefined) => {
+    if (!tasks) return [];
+
+    return tasks.filter((task) => {
+      // Search term filter
+      const matchesSearch =
+        searchTerm === "" ||
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Status filter
+      const matchesStatus =
+        filterStatus === "all" || task.status === filterStatus;
+
+      // Priority filter
+      const matchesPriority =
+        filterPriority === "all" || task.priority === filterPriority;
+
+      // Assignee filter
+      const matchesAssignee =
+        filterAssignee === "all" ||
+        (filterAssignee === 0
+          ? !task.assignedToId
+          : task.assignedToId === filterAssignee);
+
+      return (
+        matchesSearch && matchesStatus && matchesPriority && matchesAssignee
+      );
+    });
+  };
+
+  const filteredTasks = getFilteredTasks(tasks);
+  const activeFiltersCount = [
+    searchTerm !== "",
+    filterStatus !== "all",
+    filterPriority !== "all",
+    filterAssignee !== "all",
+  ].filter(Boolean).length;
+
   if (isLoading) return <div style={{ padding: "20px" }}>Loading tasks...</div>;
   if (error)
     return (
@@ -107,15 +161,22 @@ export default function TasksPage() {
     );
 
   return (
-    <div style={{ padding: "20px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
+    <>
+      {/* CSS Animation */}
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+
+      <div style={{ padding: "20px" }}>
         <div
           style={{
             display: "flex",
@@ -135,6 +196,71 @@ export default function TasksPage() {
           </div>
 
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            {/* Search Bar */}
+            <div style={{ position: "relative" }}>
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  padding: "8px 36px 8px 12px",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  width: "200px",
+                }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "#999",
+                }}
+              >
+                🔍
+              </span>
+            </div>
+
+            {/* Filter Toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: showFilters ? "#007bff" : "#f8f9fa",
+                color: showFilters ? "white" : "#333",
+                border: "1px solid #ddd",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+                position: "relative",
+              }}
+            >
+              🔧 Filters
+              {activeFiltersCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-8px",
+                    right: "-8px",
+                    backgroundColor: "#dc3545",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
+                    fontSize: "12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+
             {/* View Mode Toggle */}
             <div
               style={{
@@ -191,109 +317,286 @@ export default function TasksPage() {
             </button>
           </div>
         </div>
-      </div>
 
-      {!tasks || tasks.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "40px", color: "#6c757d" }}>
-          <h3>No tasks yet</h3>
-          <p>Create your first task to get started!</p>
-        </div>
-      ) : viewMode === "kanban" ? (
-        <KanbanBoard tasks={tasks} onTaskStatusChange={handleStatusChange} />
-      ) : (
-        <div style={{ display: "grid", gap: "15px" }}>
-          {tasks.map((task: Task) => (
+        {/* Advanced Filters Panel */}
+        {showFilters && (
+          <div
+            style={{
+              backgroundColor: "#f8f9fa",
+              border: "1px solid #e0e0e0",
+              borderRadius: "8px",
+              padding: "20px",
+              marginBottom: "20px",
+              animation: "slideDown 0.3s ease-out",
+            }}
+          >
             <div
-              key={task.id}
               style={{
-                border: "1px solid #e0e0e0",
-                borderRadius: "8px",
-                padding: "15px",
-                backgroundColor: "#fff",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "15px",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: "0 0 8px 0", color: "#333" }}>
-                    {task.title}
-                  </h4>
-                  <p
-                    style={{
-                      margin: "0 0 10px 0",
-                      color: "#666",
-                      fontSize: "14px",
-                    }}
-                  >
-                    {task.description}
-                  </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "15px",
-                      fontSize: "13px",
-                      color: "#888",
-                    }}
-                  >
-                    <select
-                      value={task.status}
-                      onChange={(e) =>
-                        handleStatusChange(
-                          task.id,
-                          Number(e.target.value) as TaskStatus
-                        )
-                      }
-                      style={{
-                        padding: "2px 8px",
-                        border: "1px solid #ccc",
-                        borderRadius: "3px",
-                        fontSize: "12px",
-                      }}
-                    >
-                      <option value={TaskStatus.ToDo}>To Do</option>
-                      <option value={TaskStatus.InProgress}>In Progress</option>
-                      <option value={TaskStatus.Review}>Review</option>
-                      <option value={TaskStatus.Done}>Done</option>
-                    </select>
-                    <span>Assigned: {task.assignedToName || "Unassigned"}</span>
-                    {task.dueDate && (
-                      <span>
-                        Due: {new Date(task.dueDate).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ marginLeft: "15px" }}>
-                  <span
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: "12px",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "white",
-                      backgroundColor: getPriorityColor(task.priority),
-                    }}
-                  >
-                    {getPriorityName(task.priority)}
-                  </span>
-                </div>
+              {/* Status Filter */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                  }}
+                >
+                  Status
+                </label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) =>
+                    setFilterStatus(
+                      e.target.value === "all"
+                        ? "all"
+                        : (Number(e.target.value) as TaskStatus)
+                    )
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value={TaskStatus.ToDo}>To Do</option>
+                  <option value={TaskStatus.InProgress}>In Progress</option>
+                  <option value={TaskStatus.Review}>Review</option>
+                  <option value={TaskStatus.Done}>Done</option>
+                </select>
+              </div>
+
+              {/* Priority Filter */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                  }}
+                >
+                  Priority
+                </label>
+                <select
+                  value={filterPriority}
+                  onChange={(e) =>
+                    setFilterPriority(
+                      e.target.value === "all"
+                        ? "all"
+                        : (Number(e.target.value) as TaskPriority)
+                    )
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <option value="all">All Priorities</option>
+                  <option value={TaskPriority.Low}>Low</option>
+                  <option value={TaskPriority.Medium}>Medium</option>
+                  <option value={TaskPriority.High}>High</option>
+                  <option value={TaskPriority.Critical}>Critical</option>
+                </select>
+              </div>
+
+              {/* Assignee Filter */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "5px",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                  }}
+                >
+                  Assignee
+                </label>
+                <select
+                  value={filterAssignee}
+                  onChange={(e) =>
+                    setFilterAssignee(
+                      e.target.value === "all" ? "all" : Number(e.target.value)
+                    )
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <option value="all">All Assignees</option>
+                  <option value={0}>Unassigned</option>
+                  {users?.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Clear Filters */}
+              <div style={{ display: "flex", alignItems: "flex-end" }}>
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setFilterStatus("all");
+                    setFilterPriority("all");
+                    setFilterAssignee("all");
+                  }}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "#6c757d",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "14px",
+                  }}
+                >
+                  Clear All
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-      {showCreateForm && (
-        <CreateTaskForm
-          projectId={Number(projectId)}
-          onSuccess={() => setShowCreateForm(false)}
-          onCancel={() => setShowCreateForm(false)}
-        />
-      )}
-    </div>
+
+            {/* Results Count */}
+            <div style={{ marginTop: "15px", fontSize: "14px", color: "#666" }}>
+              Showing {filteredTasks.length} of {tasks?.length || 0} tasks
+            </div>
+          </div>
+        )}
+
+        {!filteredTasks || filteredTasks.length === 0 ? (
+          <div
+            style={{ textAlign: "center", padding: "40px", color: "#6c757d" }}
+          >
+            {tasks && tasks.length > 0 ? (
+              <>
+                <h3>No tasks match your filters</h3>
+                <p>Try adjusting your search or filter criteria</p>
+              </>
+            ) : (
+              <>
+                <h3>No tasks yet</h3>
+                <p>Create your first task to get started!</p>
+              </>
+            )}
+          </div>
+        ) : viewMode === "kanban" ? (
+          <KanbanBoard
+            tasks={filteredTasks}
+            onTaskStatusChange={handleStatusChange}
+          />
+        ) : (
+          <div style={{ display: "grid", gap: "15px" }}>
+            {filteredTasks.map((task: Task) => (
+              <div
+                key={task.id}
+                style={{
+                  border: "1px solid #e0e0e0",
+                  borderRadius: "8px",
+                  padding: "15px",
+                  backgroundColor: "#fff",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: "0 0 8px 0", color: "#333" }}>
+                      {task.title}
+                    </h4>
+                    <p
+                      style={{
+                        margin: "0 0 10px 0",
+                        color: "#666",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {task.description}
+                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "15px",
+                        fontSize: "13px",
+                        color: "#888",
+                      }}
+                    >
+                      <select
+                        value={task.status}
+                        onChange={(e) =>
+                          handleStatusChange(
+                            task.id,
+                            Number(e.target.value) as TaskStatus
+                          )
+                        }
+                        style={{
+                          padding: "2px 8px",
+                          border: "1px solid #ccc",
+                          borderRadius: "3px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        <option value={TaskStatus.ToDo}>To Do</option>
+                        <option value={TaskStatus.InProgress}>
+                          In Progress
+                        </option>
+                        <option value={TaskStatus.Review}>Review</option>
+                        <option value={TaskStatus.Done}>Done</option>
+                      </select>
+                      <span>
+                        Assigned: {task.assignedToName || "Unassigned"}
+                      </span>
+                      {task.dueDate && (
+                        <span>
+                          Due: {new Date(task.dueDate).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ marginLeft: "15px" }}>
+                    <span
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "12px",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "white",
+                        backgroundColor: getPriorityColor(task.priority),
+                      }}
+                    >
+                      {getPriorityName(task.priority)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showCreateForm && (
+          <CreateTaskForm
+            projectId={Number(projectId)}
+            onSuccess={() => setShowCreateForm(false)}
+            onCancel={() => setShowCreateForm(false)}
+          />
+        )}
+      </div>
+    </>
   );
 }
