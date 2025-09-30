@@ -49,6 +49,7 @@ namespace ProjectFlow.API
                 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
                 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
                 builder.Services.AddScoped<ITimeEntryRepository, TimeEntryRepository>();
+                builder.Services.AddScoped<IAttachmentRepository, AttachmentRepository>();
 
                 //Add FluentValidation
                 builder.Services.AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>();
@@ -59,6 +60,7 @@ namespace ProjectFlow.API
                     cfg.AddProfile<UserMappingProfile>();
                     cfg.AddProfile<ProjectMappingProfile>();
                     cfg.AddProfile<TimeEntryMappingProfile>();
+                    cfg.AddProfile<AttachmentMappingProfile>();
                 });
 
                 // Add SignalR
@@ -115,6 +117,7 @@ namespace ProjectFlow.API
 
                 // Add services to the container.
                 builder.Services.AddAuthorization();
+                builder.Services.AddControllers();
 
                 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
                 builder.Services.AddEndpointsApiExplorer();
@@ -177,6 +180,7 @@ namespace ProjectFlow.API
                 app.MapProjectEndpoints();
                 app.MapTaskEndpoints();
                 app.MapTimeEntryEndpoints();
+                app.MapControllers();
 
                 Console.WriteLine("DEBUG: All endpoints mapped, starting app");
 

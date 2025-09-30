@@ -23,5 +23,7 @@ namespace ProjectFlow.Core.Entities
         // Navigation properties
         public Project Project { get; set; } = null!;
         public User? AssignedTo { get; set; }
+        public ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+
     }
 }

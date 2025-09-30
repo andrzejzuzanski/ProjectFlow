@@ -18,6 +18,8 @@ namespace ProjectFlow.Infrastructure.Data
         public DbSet<Project> Projects { get; set; }
         public DbSet<ProjectTask> Tasks { get; set; }
         public DbSet<TimeEntry> TimeEntries { get; set; } = null!;
+        public DbSet<Attachment> Attachments { get; set; } = null!;
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -75,6 +77,27 @@ namespace ProjectFlow.Infrastructure.Data
                       .WithMany()
                       .HasForeignKey(e => e.UserId)
                       .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Attachment configuration
+            modelBuilder.Entity<Attachment>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.FilePath).IsRequired().HasMaxLength(500);
+                entity.Property(e => e.ContentType).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+                // Relationships
+                entity.HasOne(e => e.Task)
+                      .WithMany()
+                      .HasForeignKey(e => e.TaskId)
+                      .OnDelete(DeleteBehavior.Cascade); // Delete attachments when task is deleted
+
+                entity.HasOne(e => e.UploadedBy)
+                      .WithMany()
+                      .HasForeignKey(e => e.UploadedById)
+                      .OnDelete(DeleteBehavior.Restrict); // Don't delete user if they uploaded files
             });
         }
     }

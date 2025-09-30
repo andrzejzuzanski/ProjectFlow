@@ -17,6 +17,7 @@ import { toastService } from "../services/toastService";
 import { userService } from "../services/userService";
 import TaskTimer from "../components/TaskTimer";
 import { timeTrackingService } from "../services/timeTrackingService";
+import { AttachmentList } from "../components/AttachmentList";
 
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -29,6 +30,7 @@ export default function TasksPage() {
   );
   const [filterAssignee, setFilterAssignee] = useState<number | "all">("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -116,6 +118,26 @@ export default function TasksPage() {
               );
               queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
             }
+          });
+
+          signalRService.onAttachmentAdded((attachmentNotification) => {
+            toastService.info(
+              "Attachment Added",
+              `📎 ${attachmentNotification.fileName} uploaded`
+            );
+            queryClient.invalidateQueries({
+              queryKey: ["attachments", attachmentNotification.taskId],
+            });
+          });
+
+          signalRService.onAttachmentDeleted((deleteNotification) => {
+            toastService.warning(
+              "Attachment Deleted",
+              `File removed from task`
+            );
+            queryClient.invalidateQueries({
+              queryKey: ["attachments", deleteNotification.taskId],
+            });
           });
         }
       } catch (error) {
@@ -527,7 +549,13 @@ export default function TasksPage() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "flex-start",
+                    cursor: "pointer",
                   }}
+                  onClick={() =>
+                    setExpandedTaskId(
+                      expandedTaskId === task.id ? null : task.id
+                    )
+                  }
                 >
                   <div style={{ flex: 1 }}>
                     <h4 style={{ margin: "0 0 8px 0", color: "#333" }}>
@@ -597,6 +625,17 @@ export default function TasksPage() {
                     </span>
                   </div>
                 </div>
+                {expandedTaskId === task.id && (
+                  <div
+                    style={{
+                      marginTop: "15px",
+                      paddingTop: "15px",
+                      borderTop: "1px solid #e0e0e0",
+                    }}
+                  >
+                    <AttachmentList taskId={task.id} />
+                  </div>
+                )}
                 <TaskTimer
                   taskId={task.id}
                   taskTitle={task.title}
@@ -607,7 +646,6 @@ export default function TasksPage() {
                       : undefined
                   }
                   totalTimeMinutes={task.totalTimeMinutes || 0}
-                  style={{ pointerEvents: "none" }}
                 />
               </div>
             ))}

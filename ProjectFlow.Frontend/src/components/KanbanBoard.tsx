@@ -23,6 +23,7 @@ import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import TaskTimer from "./TaskTimer";
 import { timeTrackingService } from "../services/timeTrackingService";
 import { useQuery } from "@tanstack/react-query";
+import { AttachmentList } from "./AttachmentList";
 
 interface KanbanBoardProps {
   tasks: Task[];
@@ -98,6 +99,7 @@ function TaskCard({
   task: Task;
   activeTimer?: ActiveTimer | null;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const {
     attributes,
     listeners,
@@ -115,7 +117,7 @@ function TaskCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style}>
       <div
         style={{
           backgroundColor: "white",
@@ -126,13 +128,28 @@ function TaskCard({
           boxShadow: isDragging
             ? "0 4px 8px rgba(0,0,0,0.2)"
             : "0 2px 4px rgba(0,0,0,0.1)",
-          cursor: "grab",
           opacity: isDragging ? 0.5 : 1,
         }}
       >
-        <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#333" }}>
-          {task.title}
-        </h4>
+        <div
+          {...attributes}
+          {...listeners}
+          style={{
+            cursor: "grab",
+            padding: "4px",
+            marginBottom: "8px",
+            borderBottom: "2px solid #e0e0e0",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <span style={{ fontSize: "16px" }}>⋮⋮</span>
+          <h4 style={{ margin: 0, fontSize: "14px", color: "#333", flex: 1 }}>
+            {task.title}
+          </h4>
+        </div>
+
         <p
           style={{
             margin: "0 0 10px 0",
@@ -161,6 +178,7 @@ function TaskCard({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            marginTop: "8px",
           }}
         >
           <span style={{ fontSize: "11px", color: "#888" }}>
@@ -179,6 +197,28 @@ function TaskCard({
             {getPriorityName(task.priority)}
           </span>
         </div>
+
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          style={{
+            marginTop: "8px",
+            padding: "4px 8px",
+            fontSize: "11px",
+            backgroundColor: "#f8f9fa",
+            border: "1px solid #ddd",
+            borderRadius: "4px",
+            cursor: "pointer",
+            width: "100%",
+          }}
+        >
+          {isExpanded ? "🔽" : "▶️"} Attachments
+        </button>
+
+        {isExpanded && (
+          <div style={{ marginTop: "8px" }}>
+            <AttachmentList taskId={task.id} />
+          </div>
+        )}
       </div>
     </div>
   );
